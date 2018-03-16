@@ -1,9 +1,10 @@
-from flask import Flask
+from flask import Flask, g, request, jsonify, send_from_directory
 from flask_restful import Api
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
+# from .views import *
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../build')
 api = Api(app)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
@@ -27,14 +28,21 @@ def check_if_token_in_blacklist(decrypted_token):
     jti = decrypted_token['jti']
     return models.RevokedTokenModel.is_jti_blacklisted(jti)
 
-import views, models, resources
 
-api.add_resource(resources.UserRegistration, '/registration')
-api.add_resource(resources.UserLogin, '/login')
-api.add_resource(resources.UserLogoutAccess, '/logout/access')
-api.add_resource(resources.UserLogoutRefresh, '/logout/refresh')
-api.add_resource(resources.TokenRefresh, '/token/refresh')
-api.add_resource(resources.AllUsers, '/users')
-api.add_resource(resources.SecretResource, '/secret')
+from .resources import *
+api.add_resource(UserRegistration, '/registration')
+api.add_resource(UserLogin, '/login')
+api.add_resource(UserLogoutAccess, '/logout/access')
+api.add_resource(UserLogoutRefresh, '/logout/refresh')
+api.add_resource(TokenRefresh, '/token/refresh')
+api.add_resource(AllUsers, '/users')
+api.add_resource(SecretResource, '/secret')
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def index(path):
+  '''Return index.html for all non-api routes'''
+  #pylint: disable=unused-argument
+  return send_from_directory(app.static_folder, 'index.html')
 if __name__ == '__main__':
     app.run()
